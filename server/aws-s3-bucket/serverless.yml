@@ -1,0 +1,59 @@
+service: aws-s3-bucket
+frameworkVersion: '3'
+
+custom:
+  s3:
+    bucket: ganzo-s3-bucket
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+
+functions:
+  createURL:
+    handler: handlers/createURL.createURL
+    events:
+      - http:
+          path: upload
+          method: post
+          cors: true
+  getURL:
+    handler: handlers/getURL.getURL
+    events:
+      - http:
+          path: image
+          method: get
+          cors: true
+
+resources:
+  Resources:
+    GanzoS3Bucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.s3.bucket}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - PUT
+                - GET
+              AllowedOrigins:
+                - '*'
+    BucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref GanzoS3Bucket
+        PolicyDocument:
+          Statement:
+            - Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+              Resource:
+                - arn:aws:s3:::${self:custom.s3.bucket}/*
+              Effect: Allow
+              Principal: '*'
+              CorsConfiguration:
+# CorsConfiguration
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-cors.html#cfn-s3-bucket-cors-corsrule
