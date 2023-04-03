@@ -69,13 +69,15 @@ export default function Home() {
   const getImageURLfromS3 = async () => {
     setLoading(true);
 
+    const download = `https://${bucketName}.s3.amazonaws.com/${fileData.fileName}`;
+
     try {
       // AWS endpoint comes here...
       const endpoint =
         'https://k5nmxwqgif.execute-api.us-east-1.amazonaws.com/dev/image';
-      const response = await axios.get(endpoint);
+      // const response = await axios.get(endpoint);
 
-      console.log(response);
+      console.log(download);
     } catch (error: any) {
       console.log('<<<<<<ERROR FROM BACKEND>>>>:', error.message);
     } finally {

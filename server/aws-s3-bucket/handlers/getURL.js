@@ -13,9 +13,9 @@ module.exports.getURL = async (event) => {
   // const { bucketName, fileName } = JSON.parse(event.body);
 
   try {
-    const command = new ListObjectsV2Command({
+    const command = new GetObjectCommand({
       Bucket: 'ganzo-s3-bucket', // "ganzo-s3-bucket"
-      // Key: 'car.png', // "car.png"
+      Key: 'car.png', // "car.png"
     });
     const params = {
       Bucket: 'ganzo-s3-bucket', // "ganzo-s3-bucket"
@@ -24,9 +24,11 @@ module.exports.getURL = async (event) => {
       // Expires: expiredIn, // 3000
     };
 
-    const Contents = await client.send(command);
+    const response = await client.send(command);
     // The Body object also has 'transformToByteArray' and 'transformToWebStream' methods.
-    console.log('<<<<<<<<<<<<<<<<<STRING', Contents);
+    const str = await response.Body.transformToString();
+
+    console.log('<<<<<<<<<<<<<<<<<STRING', str);
 
     // const url = s3.getObject(params, function (err, data) {
     //   if (err) console.log(err, err.stack); // an error occurred
