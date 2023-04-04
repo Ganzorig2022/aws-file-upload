@@ -9,7 +9,11 @@ provider:
   name: aws
   runtime: nodejs16.x
 
+  environment:
+    BUCKET_NAME: ${self:custom.s3.bucket}
+
 functions:
+  # image uploader function
   createURL:
     handler: handlers/createURL.createURL
     events:
@@ -17,13 +21,33 @@ functions:
           path: upload
           method: post
           cors: true
-  getURL:
-    handler: handlers/getURL.getURL
+  # getURL:
+  #   handler: handlers/getURL.getURL
+  #   events:
+  #     - http:
+  #         path: image
+  #         method: get
+  #         cors: true
+  getListBucket:
+    handler: handlers/getListBucket.getListBucket
     events:
       - http:
           path: image
           method: get
           cors: true
+
+  s3Trigger:
+    # this function will be triggered by when image is uploaded
+    handler: handlers/s3Trigger.s3Trigger
+    events:
+      - s3:
+          bucket: ${self:custom.s3.bucket}
+          event:
+            - s3:ObjectCreated:*
+          # rules:
+          #   - prefix: /
+          #   - suffix: .jpg
+          existing: true
 
 resources:
   Resources:

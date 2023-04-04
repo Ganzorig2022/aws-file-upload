@@ -1,6 +1,9 @@
+import Carousel from '@/components/Carousel';
 import axios from 'axios';
 import Head from 'next/head';
 import React, { useState } from 'react';
+
+type URL_type = {};
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -10,6 +13,8 @@ export default function Home() {
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [headerType, setHeaderType] = useState('');
+  const [imageURLs, setImageURLs] = useState<string[]>([]);
+
   const bucketName = 'ganzo-s3-bucket';
 
   // 1) Get image data from input
@@ -23,8 +28,6 @@ export default function Home() {
     setHeaderType(contentType);
 
     const fileName = e.target.files[0].name; // "car.png" will return
-
-    // const fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1); // "png" will return
 
     setFileData((prev) => ({ ...prev, fileName, contentType }));
   };
@@ -55,7 +58,7 @@ export default function Home() {
           headers: { 'Content-Type': headerType },
         });
 
-        console.log('Finally Image URL:', imgURL);
+        // console.log('Finally Image URL:', imgURL);
 
         setLoading(false);
       }
@@ -66,6 +69,34 @@ export default function Home() {
     }
   };
 
+  const getListBuckets = async () => {
+    // AWS endpoint comes here...
+    try {
+      const endpoint =
+        'https://k5nmxwqgif.execute-api.us-east-1.amazonaws.com/dev/image';
+      const response = await axios.get(endpoint);
+      console.log('<<<<<<LIST BUCKETS FROM BACKEND>>>>:', response.data?.data);
+
+      const { Contents, Name } = response.data?.data;
+      // Contents = {Key: 'ganzo.png" ...} will return
+      // Name = 'ganzo-s3-bucket" will return
+
+      const Keys = Contents.map((el) => el.Key);
+
+      const downloadURLs = Keys.map(
+        (key) => `https://${Name}.s3.amazonaws.com/${key}`
+      );
+      setImageURLs([...downloadURLs]);
+
+      // const fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1); // "png" will return
+    } catch (error: any) {
+      console.log('<<<<<<ERROR FROM BACKEND>>>>:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  // console.log(imageURLs);
+
   const getImageURLfromS3 = async () => {
     setLoading(true);
 
@@ -75,9 +106,9 @@ export default function Home() {
       // AWS endpoint comes here...
       const endpoint =
         'https://k5nmxwqgif.execute-api.us-east-1.amazonaws.com/dev/image';
-      // const response = await axios.get(endpoint);
+      const response = await axios.get(endpoint);
 
-      console.log(download);
+      console.log(response);
     } catch (error: any) {
       console.log('<<<<<<ERROR FROM BACKEND>>>>:', error.message);
     } finally {
@@ -111,10 +142,20 @@ export default function Home() {
         </button>
         <button
           className={`btn ${loading ? 'loading' : ''} `}
+          // disabled
+          onClick={getListBuckets}
+        >
+          GET LIST BUCKETS
+        </button>
+        <button
+          className={`btn ${loading ? 'loading' : ''} `}
+          disabled
           onClick={getImageURLfromS3}
         >
           GET IMAGE URL
         </button>
+
+        <Carousel imageURLs={imageURLs} />
       </div>
     </>
   );
