@@ -3,7 +3,7 @@ require('dotenv').config();
 const { S3Client, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const client = new S3Client({});
 
-const BUCKET_NAME = process.env.BUCKET_NAME; // 'ganzo-s3-bucket" from server.yml
+const BUCKET_NAME = process.env.BUCKET_NAME; // 'ganzo-s3-bucket" from serverless.yml
 
 module.exports.getListBucket = async (event) => {
   try {
@@ -15,7 +15,6 @@ module.exports.getListBucket = async (event) => {
     });
 
     const { Contents, Name } = await client.send(command);
-    console.log(Contents);
 
     return {
       statusCode: 200,
@@ -24,12 +23,12 @@ module.exports.getListBucket = async (event) => {
         'Access-Control-Allow-Headers': '*',
       },
       body: JSON.stringify({
-        message: 'ListBucket is successful',
+        message: 'ListBucket is successful.',
         data: { Contents, Name },
       }),
     };
   } catch (error) {
-    console.log('<<<<<<List Bucket List>>>>>', error);
+    console.log('<<<<<<List Bucket ERROR>>>>>', error);
     return {
       statusCode: 400, //Bad request
       headers: {

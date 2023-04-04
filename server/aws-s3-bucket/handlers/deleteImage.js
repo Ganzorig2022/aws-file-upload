@@ -1,19 +1,20 @@
-const { S3 } = require('aws-sdk');
+require('dotenv').config();
 
-const s3 = new S3();
+const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const client = new S3Client({});
 
-module.exports.createURL = async (event) => {
-  const { bucketName, fileName, contentType } = JSON.parse(event.body);
+module.exports.deleteImage = async (event) => {
+  const { bucketName, fileName } = JSON.parse(event.body);
 
   try {
-    const params = {
+    const command = new DeleteObjectCommand({
       Bucket: bucketName, // "ganzo-s3-bucket"
       Key: fileName, // "car.png"
-      ContentType: contentType, // "image.png"
-      Expires: 3600, // 1 hour
-    };
+    });
 
-    const preSignUrl = s3.getSignedUrl('putObject', params);
+    const response = await client.send(command);
+
+    console.log('<<<<<<DELETE RESPONSE>>>>>', response);
 
     return {
       statusCode: 200,
@@ -22,13 +23,12 @@ module.exports.createURL = async (event) => {
         'Access-Control-Allow-Headers': '*',
       },
       body: JSON.stringify({
-        message: 'Upload is successfull',
-        preSignUrl,
+        message: 'Image Deletion is successful.',
+        // data: { Contents, Name },
       }),
     };
   } catch (error) {
-    console.log('<<<<<<Pre-Sign URL ERROR>>>>>', error);
-
+    console.log('<<<<<<Image DELETE ERROR>>>>>', error);
     return {
       statusCode: 400, //Bad request
       headers: {

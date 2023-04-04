@@ -21,13 +21,7 @@ functions:
           path: upload
           method: post
           cors: true
-  # getURL:
-  #   handler: handlers/getURL.getURL
-  #   events:
-  #     - http:
-  #         path: image
-  #         method: get
-  #         cors: true
+
   getListBucket:
     handler: handlers/getListBucket.getListBucket
     events:
@@ -36,18 +30,26 @@ functions:
           method: get
           cors: true
 
-  s3Trigger:
-    # this function will be triggered by when image is uploaded
-    handler: handlers/s3Trigger.s3Trigger
+  deleteImage:
+    handler: handlers/deleteImage.deleteImage
     events:
-      - s3:
-          bucket: ${self:custom.s3.bucket}
-          event:
-            - s3:ObjectCreated:*
-          # rules:
-          #   - prefix: /
-          #   - suffix: .jpg
-          existing: true
+      - http:
+          path: image
+          method: delete
+          cors: true
+
+  # s3Trigger:
+  #   # this function will be triggered by when image is uploaded on AWS S3
+  #   handler: handlers/s3Trigger.s3Trigger
+  #   events:
+  #     - s3:
+  #         bucket: ${self:custom.s3.bucket}
+  #         event:
+  #           - s3:ObjectCreated:*
+  #         # rules:
+  #         #   - prefix: /
+  #         #   - suffix: .jpg
+  #         existing: true
 
 resources:
   Resources:
@@ -62,6 +64,7 @@ resources:
               AllowedMethods:
                 - PUT
                 - GET
+                - DELETE
               AllowedOrigins:
                 - '*'
     BucketPolicy:
@@ -74,11 +77,12 @@ resources:
                 - s3:ListBucket
                 - s3:GetObject
                 - s3:PutObject
+                - s3:DeleteObject
               Resource:
                 - arn:aws:s3:::${self:custom.s3.bucket}/*
+                # For list bucket...
                 - arn:aws:s3:::${self:custom.s3.bucket}
               Effect: Allow
               Principal: '*'
-              CorsConfiguration:
 # CorsConfiguration
 # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket-cors.html#cfn-s3-bucket-cors-corsrule

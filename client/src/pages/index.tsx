@@ -1,9 +1,7 @@
-import Carousel from '@/components/Carousel';
+import Gallery from '@/components/Gallery';
 import axios from 'axios';
 import Head from 'next/head';
 import React, { useState } from 'react';
-
-type URL_type = {};
 
 export default function Home() {
   const [loading, setLoading] = useState(false);
@@ -14,6 +12,7 @@ export default function Home() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [headerType, setHeaderType] = useState('');
   const [imageURLs, setImageURLs] = useState<string[]>([]);
+  const [imageName, setImageName] = useState<string[]>([]);
 
   const bucketName = 'ganzo-s3-bucket';
 
@@ -42,23 +41,17 @@ export default function Home() {
 
       // AWS endpoint comes here...
       const endpoint =
-        'https://k5nmxwqgif.execute-api.us-east-1.amazonaws.com/dev/upload';
+        'https://6d6zx1x3pb.execute-api.us-east-1.amazonaws.com/dev/upload';
 
       const response = await axios.post(endpoint, { bucketName, ...fileData });
 
       const preSignUrl = response.data?.preSignUrl;
 
       if (preSignUrl) {
-        console.log(
-          'PreSignURL from BACKEND>>>>>>>>',
-          response.data.preSignUrl
-        );
-
-        const imgURL = await axios.put(preSignUrl, selectedFile, {
-          headers: { 'Content-Type': headerType },
+        // last step for image upload on AWS S3 by using pre-signed URL
+        await axios.put(preSignUrl, selectedFile, {
+          headers: { 'Content-Type': headerType }, // "image/png"
         });
-
-        // console.log('Finally Image URL:', imgURL);
 
         setLoading(false);
       }
@@ -69,23 +62,31 @@ export default function Home() {
     }
   };
 
+  // 3) Get image's metadata list[] and then get download urls
   const getListBuckets = async () => {
     // AWS endpoint comes here...
     try {
       const endpoint =
-        'https://k5nmxwqgif.execute-api.us-east-1.amazonaws.com/dev/image';
+        'https://6d6zx1x3pb.execute-api.us-east-1.amazonaws.com/dev/image';
+
       const response = await axios.get(endpoint);
+
       console.log('<<<<<<LIST BUCKETS FROM BACKEND>>>>:', response.data?.data);
 
       const { Contents, Name } = response.data?.data;
-      // Contents = {Key: 'ganzo.png" ...} will return
+      // Contents = [{Key: 'ganzo.png" ...}, {...}] will return
       // Name = 'ganzo-s3-bucket" will return
 
-      const Keys = Contents.map((el) => el.Key);
+      console.log('Contents>>>>>>>>>>>>>>>>', Contents);
+
+      const Keys = Contents.map((el: { Key: string }) => el.Key); // ['car.jpg', 'car.png' etc.]
+
+      setImageName([...Keys]);
 
       const downloadURLs = Keys.map(
-        (key) => `https://${Name}.s3.amazonaws.com/${key}`
+        (key: string) => `https://${Name}.s3.amazonaws.com/${key}`
       );
+
       setImageURLs([...downloadURLs]);
 
       // const fileExtension = fileName.substring(fileName.lastIndexOf('.') + 1); // "png" will return
@@ -97,22 +98,19 @@ export default function Home() {
   };
   // console.log(imageURLs);
 
-  const getImageURLfromS3 = async () => {
-    setLoading(true);
-
-    const download = `https://${bucketName}.s3.amazonaws.com/${fileData.fileName}`;
-
+  const deleteImage = async () => {
     try {
-      // AWS endpoint comes here...
       const endpoint =
-        'https://k5nmxwqgif.execute-api.us-east-1.amazonaws.com/dev/image';
-      const response = await axios.get(endpoint);
+        'https://6d6zx1x3pb.execute-api.us-east-1.amazonaws.com/dev/image';
 
-      console.log(response);
+      const response = await axios.delete(endpoint, {
+        data: { bucketName, fileName: 'car.png' },
+      });
+
+      console.log('<<<<<<DELETE RESPONSE FROM BACKEND>>>>:', response);
     } catch (error: any) {
       console.log('<<<<<<ERROR FROM BACKEND>>>>:', error.message);
     } finally {
-      setLoading(false);
     }
   };
 
@@ -135,28 +133,32 @@ export default function Home() {
           required
         />
         <button
-          className={`btn ${loading ? 'loading' : ''} `}
+          className={`btn ${loading ? 'loading' : ''} btn-primary`}
           onClick={uploadToS3}
         >
-          UPLOAD IMAGE
+          UPLOAD SINGLE IMAGE
         </button>
         <button
-          className={`btn ${loading ? 'loading' : ''} `}
+          className={`btn ${loading ? 'loading' : ''} btn-secondary`}
           // disabled
           onClick={getListBuckets}
         >
           GET LIST BUCKETS
         </button>
-        <button
-          className={`btn ${loading ? 'loading' : ''} `}
-          disabled
-          onClick={getImageURLfromS3}
+        {/* <button
+          className={`btn ${loading ? 'loading' : ''} btn-error `}
+          // disabled
+          onClick={deleteImage}
         >
-          GET IMAGE URL
-        </button>
+          DELETE SINGLE IMAGE
+        </button> */}
 
-        <Carousel imageURLs={imageURLs} />
+        {/* IMAGE CAROUSEL */}
+        <Gallery imageURLs={imageURLs} Keys={imageName} />
       </div>
     </>
   );
 }
+
+// Delete multiple objects from an Amazon S3 bucket
+//  https://docs.aws.amazon.com/AmazonS3/latest/userguide/example_s3_DeleteObjects_section.html
